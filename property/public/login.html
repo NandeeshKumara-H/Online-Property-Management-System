@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Property Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="index.html#properties">Properties</a>
+                <a href="signup.html" class="btn-primary">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-card">
+                <h2>Welcome Back</h2>
+                <p class="auth-subtitle">Login to access your account</p>
+
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <a href="#" onclick="showForgotPassword()" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block" id="loginBtn">
+                        Login
+                    </button>
+                </form>
+
+                <p class="auth-footer">
+                    Don't have an account? <a href="signup.html">Sign up here</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotModal()">&times;</span>
+            <h3>Reset Password</h3>
+            
+            <div id="forgotStep1">
+                <p>Enter your email to receive OTP</p>
+                <input type="email" id="forgotEmail" class="form-input" placeholder="Email Address">
+                <button onclick="sendResetOTP()" class="btn-primary btn-block">Send OTP</button>
+            </div>
+
+            <div id="forgotStep2" style="display: none;">
+                <p>Enter the OTP sent to your email</p>
+                <input type="text" id="resetOTP" class="form-input" placeholder="6-digit OTP" maxlength="6">
+                <input type="password" id="newPassword" class="form-input" placeholder="New Password">
+                <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm Password">
+                <button onclick="resetPassword()" class="btn-primary btn-block">Reset Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    showNotification('Login successful!', 'success');
+                    
+                    // Redirect based on role
+                    setTimeout(() => {
+                        if (data.user.role === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }, 1000);
+                } else {
+                    showNotification(data.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+                console.error('Login error:', error);
+            }
+        }
+
+        function showForgotPassword() {
+            document.getElementById('forgotModal').style.display = 'block';
+        }
+
+        function closeForgotModal() {
+            document.getElementById('forgotModal').style.display = 'none';
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+        }
+
+        async function sendResetOTP() {
+            const email = document.getElementById('forgotEmail').value;
+            
+            if (!email) {
+                showNotification('Please enter your email', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/forgot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    showNotification('OTP sent to your email!', 'success');
+                    document.getElementById('forgotStep1').style.display = 'none';
+                    document.getElementById('forgotStep2').style.display = 'block';
+                } else {
+                    showNotification(data.message || 'Failed to send OTP', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+            }
+        }
+
+        async function resetPassword() {
+            const email = document.getElementById('forgotEmail').value;
+            const otp = document.getElementById('resetOTP').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!otp || !newPassword || !confirmPassword) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp, newPassword })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    showNotification('Password reset successful!', 'success');
+                    closeForgotModal();
+                    
+                    // Auto-login with new password
+                    setTimeout(() => {
+                        document.getElementById('email').value = email;
+                        document.getElementById('password').value = newPassword;
+                    }, 1000);
+                } else {
+                    showNotification(data.message || 'Failed to reset password', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('forgotModal');
+            if (event.target == modal) {
+                closeForgotModal();
+            }
+        }
+    </script>
+</body>
+</html>

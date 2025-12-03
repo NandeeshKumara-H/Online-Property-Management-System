@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Details - Property Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="index.html#properties">Properties</a>
+                <div id="authLinks">
+                    <a href="login.html" class="btn-secondary">Login</a>
+                </div>
+                <div id="userMenu" style="display: none;">
+                    <a href="dashboard.html" class="btn-secondary">Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Property Details -->
+    <section class="property-detail-section">
+        <div class="container">
+            <div id="propertyDetail">
+                <div class="loading">Loading property details...</div>
+            </div>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+    <script>
+        let currentUser = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadPropertyDetails();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+            if (token && user) {
+                currentUser = user;
+                document.getElementById('authLinks').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'flex';
+            }
+        }
+
+        async function loadPropertyDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const propertyId = urlParams.get('id');
+
+            if (!propertyId) {
+                document.getElementById('propertyDetail').innerHTML = `
+                    <div class="error-message">
+                        <p>Property not found</p>
+                        <a href="index.html" class="btn-primary">Back to Home</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/property/${propertyId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayProperty(data.property);
+                } else {
+                    document.getElementById('propertyDetail').innerHTML = `
+                        <div class="error-message">
+                            <p>Property not found</p>
+                            <a href="index.html" class="btn-primary">Back to Home</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading property:', error);
+                document.getElementById('propertyDetail').innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to load property details</p>
+                        <a href="index.html" class="btn-primary">Back to Home</a>
+                    </div>
+                `;
+            }
+        }
+
+        function displayProperty(property) {
+            const detailContainer = document.getElementById('propertyDetail');
+
+            detailContainer.innerHTML = `
+                <div class="property-full-detail">
+                    <div class="property-header">
+                        <h1>${property.title}</h1>
+                        <p class="property-price-large">$${property.price.toLocaleString()}</p>
+                    </div>
+
+                    <div class="property-images-gallery">
+                        ${property.images && property.images.length > 0
+                    ? property.images.map(img => `
+                                <img src="${img}" alt="${property.title}" class="gallery-image">
+                            `).join('')
+                    : '<img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&h=600&fit=crop" alt="Property" class="gallery-image">'}
+                    </div>
+
+                    ${property.latitude && property.longitude ? `
+                    <div class="property-map-container">
+                        <h3>📍 Property Location</h3>
+                        <div id="propertyMap"></div>
+                    </div>
+                    ` : ''}
+
+                    <div class="property-info-grid">
+                        <div class="info-section">
+                            <h3>Property Details</h3>
+                            <div class="info-item">
+                                <strong>Type:</strong> ${property.propertyType}
+                            </div>
+                            <div class="info-item">
+                                <strong>Location:</strong> 📍 ${property.location}
+                            </div>
+                            <div class="info-item">
+                                <strong>Status:</strong> <span class="badge ${property.status}">${property.status}</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Listed:</strong> ${new Date(property.createdAt).toLocaleDateString()}
+                            </div>
+                        </div>
+
+                        <div class="info-section">
+                            <h3>Description</h3>
+                            <p>${property.description}</p>
+                        </div>
+
+                        ${property.ownerDetails ? `
+                        <div class="info-section">
+                            <h3>Owner Information</h3>
+                            <div class="info-item">
+                                <strong>Name:</strong> ${property.ownerDetails.name}
+                            </div>
+                            <div class="info-item">
+                                <strong>Email:</strong> ${property.ownerDetails.email}
+                            </div>
+                            ${currentUser && currentUser.role === 'tenant' ? `
+                            <button onclick="contactOwner('${property.ownerId}', '${property.ownerDetails.name}')" class="btn-primary">
+                                💬 Contact Owner
+                            </button>
+                            ` : ''}
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="property-actions-section">
+                        ${!currentUser ? `
+                            <p>Please <a href="login.html">login</a> to contact the owner</p>
+                        ` : ''}
+                        <a href="index.html" class="btn-secondary">← Back to Properties</a>
+                    </div>
+                </div>
+            `;
+
+            // Initialize map if coordinates exist
+            if (property.latitude && property.longitude) {
+                // Load Leaflet.js script and initialize map
+                loadLeafletAndInitMap(property.latitude, property.longitude, property.title);
+            }
+        }
+
+        // Initialize OpenStreetMap with Leaflet.js
+        let map;
+        let marker;
+
+        function loadLeafletAndInitMap(lat, lng, title) {
+            // Check if Leaflet is already loaded
+            if (typeof L !== 'undefined') {
+                initMap(lat, lng, title);
+            } else {
+                // Load Leaflet.js dynamically
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+                script.crossOrigin = '';
+                script.onload = () => initMap(lat, lng, title);
+                document.head.appendChild(script);
+            }
+        }
+
+        function initMap(lat, lng, title) {
+            try {
+                // Initialize the map
+                map = L.map('propertyMap').setView([parseFloat(lat), parseFloat(lng)], 16);
+
+                // Add OpenStreetMap tile layer (completely free, no API key needed)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19,
+                }).addTo(map);
+
+                // Add a marker at the property location
+                marker = L.marker([parseFloat(lat), parseFloat(lng)]).addTo(map);
+
+                // Add popup to the marker
+                marker.bindPopup(`<b>${title}</b><br>Property Location`).openPopup();
+
+            } catch (error) {
+                console.error('Error loading map:', error);
+                document.getElementById('propertyMap').innerHTML = `
+                    <div class="map-placeholder">
+                        <p>Unable to load map</p>
+                        <p style="font-size: 0.9rem;">Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function contactOwner(ownerId, ownerName) {
+            if (!currentUser) {
+                alert('Please login to contact owner');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            window.location.href = `chat.html?receiver=${ownerId}&name=${ownerName}`;
+        }
+    </script>
+</body>
+
+</html>

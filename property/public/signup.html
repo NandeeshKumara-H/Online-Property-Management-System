@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Property Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="index.html#properties">Properties</a>
+                <a href="login.html" class="btn-primary">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Signup Form -->
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-card">
+                <h2>Create Account</h2>
+                <p class="auth-subtitle">Join PropertyHub today</p>
+
+                <!-- Step 1: Initial Registration -->
+                <form id="signupForm" onsubmit="handleSignup(event)" style="display: block;">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role">I am a...</label>
+                        <select id="role" name="role" class="form-input" required>
+                            <option value="">Select Role</option>
+                            <option value="owner">Property Owner (Want to list properties)</option>
+                            <option value="tenant">Tenant (Looking for properties)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block" id="signupBtn">
+                        Send OTP
+                    </button>
+                </form>
+
+                <!-- Step 2: OTP Verification -->
+                <div id="otpForm" style="display: none;">
+                    <p>Enter the OTP sent to <strong id="userEmail"></strong></p>
+                    
+                    <div class="form-group">
+                        <label for="otp">OTP Code</label>
+                        <input type="text" id="otp" class="form-input" placeholder="6-digit code" maxlength="6" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Create Password</label>
+                        <input type="password" id="password" class="form-input" minlength="6" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" required>
+                    </div>
+
+                    <button onclick="verifyOTP()" class="btn-primary btn-block">
+                        Complete Registration
+                    </button>
+
+                    <button onclick="resendOTP()" class="btn-secondary btn-block" style="margin-top: 10px;">
+                        Resend OTP
+                    </button>
+                </div>
+
+                <p class="auth-footer">
+                    Already have an account? <a href="login.html">Login here</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let signupData = {};
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const role = document.getElementById('role').value;
+
+            if (!name || !email || !role) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            signupData = { name, email, role };
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, role })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    showNotification('OTP sent to your email!', 'success');
+                    document.getElementById('signupForm').style.display = 'none';
+                    document.getElementById('otpForm').style.display = 'block';
+                    document.getElementById('userEmail').textContent = email;
+                } else {
+                    showNotification(data.message || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+                console.error('Signup error:', error);
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = document.getElementById('otp').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!otp || !password || !confirmPassword) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: signupData.email,
+                        otp,
+                        password,
+                        name: signupData.name,
+                        role: signupData.role
+                    })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    showNotification('Registration successful!', 'success');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    showNotification(data.message || 'Verification failed', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+                console.error('Verify error:', error);
+            }
+        }
+
+        async function resendOTP() {
+            if (!signupData.email) {
+                showNotification('Please start registration again', 'error');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(signupData)
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    showNotification('New OTP sent!', 'success');
+                } else {
+                    showNotification(data.message || 'Failed to resend OTP', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showNotification('Network error. Please try again.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

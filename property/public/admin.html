@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Property Management System</title>
+    <!-- Leaflet CSS for OpenStreetMap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- INLINE / INTERNAL CSS ONLY -->
+    <style>
+        /* ================== RESET & BASE ================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #16a34a;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+            --shadow: 0 4px 8px rgba(15, 23, 42, 0.08);
+            --radius: 12px;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #e0f2fe 0, #f8fafc 38%, #e2e8f0 100%);
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        p {
+            line-height: 1.5;
+        }
+
+        /* ================== NAVBAR ================== */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.6);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 0;
+        }
+
+        .nav-brand h1 {
+            font-size: 1.4rem;
+            color: #e5f0ff;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-brand .muted {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.75rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-links a {
+            font-size: 0.95rem;
+            text-decoration: none;
+            color: #e5e7eb;
+            position: relative;
+            padding-bottom: 0.25rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #60a5fa, #a855f7);
+            transition: width 0.25s ease;
+        }
+
+        .nav-links a:hover {
+            color: #ffffff;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-user span#userName {
+            color: #e5e7eb;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        /* ================== BUTTONS ================== */
+        .btn-primary,
+        .btn-secondary,
+        .btn-danger,
+        .btn-success,
+        .btn-sm {
+            border: none;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.55rem 1.3rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #ffffff;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: #ffffff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .btn-sm {
+            padding: 0.3rem 0.9rem;
+            font-size: 0.8rem;
+        }
+
+        /* ================== DASHBOARD LAYOUT ================== */
+        .dashboard-section {
+            padding: 2.5rem 0 3.5rem;
+        }
+
+        .dashboard-header {
+            margin-bottom: 1.75rem;
+        }
+
+        .dashboard-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .dashboard-header p {
+            margin-top: 0.3rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ================== STATS CARDS ================== */
+        /* 3 compact cards on top, big full-width Pending card below */
+        #stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 1.6rem;
+        }
+
+        /* Base stat card */
+        .stat-card {
+            position: relative;
+            background: linear-gradient(135deg, #ffffff, #f9fafb);
+            padding: 12px 16px;
+            min-height: 78px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            top: -2px;
+            height: 3px;
+            background: linear-gradient(90deg, #60a5fa, #4f46e5);
+            opacity: 0.35;
+        }
+
+        .stat-card h3 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-card p {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-secondary);
+        }
+
+        /* BIG Pending card = full width row */
+        .stat-card.pending {
+            grid-column: 1 / -1;
+            /* full width */
+            min-height: 96px;
+            padding: 16px 18px;
+            background: radial-gradient(circle at top left, #fef3c7 0, #fff7ed 55%, #fefce8 100%);
+            border: 1px solid rgba(234, 179, 8, 0.7);
+            box-shadow: 0 6px 18px rgba(234, 179, 8, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .stat-card.pending::before {
+            background: linear-gradient(90deg, #f97316, #facc15);
+            opacity: 0.9;
+        }
+
+        .stat-card.pending h3 {
+            font-size: 1.7rem;
+            color: #92400e;
+        }
+
+        .stat-card.pending p {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #b45309;
+        }
+
+        /* Responsive tweak */
+        @media (max-width: 768px) {
+            #stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .stat-card.pending {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        /* ================== MANAGEMENT WRAPPER ================== */
+        .management {
+            margin-top: 0.5rem;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 18px;
+            padding: 1.5rem 1.5rem 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        /* ================== TABS ================== */
+        .dashboard-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+        }
+
+        .tab-btn {
+            border: none;
+            background: transparent;
+            padding: 0.65rem 1.25rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            background: #e5edff;
+            color: var(--primary-color);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(120deg, #2563eb, #4f46e5);
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 1.4rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h3 {
+            font-size: 1.15rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* ================== GRID CARDS (PENDING PROPERTIES) ================== */
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .property-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .property-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+            border-color: rgba(59, 130, 246, 0.75);
+        }
+
+        .property-image {
+            position: relative;
+            height: 170px;
+            overflow: hidden;
+        }
+
+        .property-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .property-card:hover .property-image img {
+            transform: scale(1.05);
+        }
+
+        .property-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(15, 23, 42, 0.8);
+            color: #f9fafb;
+        }
+
+        .property-badge.pending {
+            background: rgba(245, 158, 11, 0.95);
+        }
+
+        .property-details {
+            padding: 1rem 1.1rem 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .property-details h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .property-location {
+            font-size: 0.86rem;
+            color: var(--text-secondary);
+        }
+
+        .property-price {
+            margin-top: 0.3rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #16a34a;
+        }
+
+        .property-type {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .property-actions {
+            margin-top: 0.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        /* ================== TABLES (ALL PROPERTIES & USERS) ================== */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+            color: #ffffff;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem 0.85rem;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+
+        .data-table th {
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.15s ease;
+        }
+
+        .data-table tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .data-table tbody tr:hover {
+            background: #eef2ff;
+        }
+
+        .badge {
+            padding: 0.25rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+
+        .badge.pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: #b45309;
+        }
+
+        .badge.approved {
+            background: rgba(22, 163, 74, 0.15);
+            color: #15803d;
+        }
+
+        .badge.rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #b91c1c;
+        }
+
+        .badge.admin {
+            background: rgba(239, 68, 68, 0.15);
+            color: #b91c1c;
+        }
+
+        .badge.owner {
+            background: rgba(37, 99, 235, 0.15);
+            color: #1d4ed8;
+        }
+
+        .badge.tenant {
+            background: rgba(22, 163, 74, 0.15);
+            color: #15803d;
+        }
+
+        /* ================== MODAL ================== */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            justify-content: center;
+            align-items: flex-start;
+            padding: 3rem 1rem;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 1.8rem 2rem 2.1rem;
+            position: relative;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55);
+            animation: fadeInModal 0.25s ease-out;
+        }
+
+        .modal-large {
+            max-width: 1000px;
+        }
+
+        .close {
+            position: absolute;
+            top: 16px;
+            right: 18px;
+            font-size: 1.7rem;
+            line-height: 1;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+
+        .close:hover {
+            color: #ef4444;
+            transform: scale(1.05);
+        }
+
+        .property-images img {
+            width: 100%;
+            max-height: 320px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 0.8rem;
+        }
+
+        .property-info p {
+            margin-bottom: 0.4rem;
+            font-size: 0.92rem;
+        }
+
+        .property-info p strong {
+            color: var(--text-primary);
+        }
+
+        @keyframes fadeInModal {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================== LOADING OVERLAY ================== */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 3500;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 4px solid rgba(148, 163, 184, 0.4);
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ================== RESPONSIVE ================== */
+        @media (max-width: 768px) {
+            .nav-inner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.4rem;
+            }
+
+            .nav-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .dashboard-section.container {
+                padding-top: 1.8rem;
+            }
+
+            #stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .stat-card.pending {
+                grid-column: span 2;
+            }
+
+            .management {
+                padding: 1.2rem 1rem 1.6rem;
+            }
+
+            .properties-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                padding: 1.5rem 0.6rem;
+            }
+
+            .modal-content {
+                padding: 1.4rem 1.4rem 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.6rem;
+            }
+
+            #stats {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card.pending {
+                grid-column: span 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="container nav-inner">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub Admin</h1>
+                <p class="muted">Admin Panel</p>
+            </div>
+            <div class="nav-actions">
+                <nav class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="admin.html">Dashboard</a>
+                </nav>
+                <div class="nav-user">
+                    <span id="userName"></span>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-section container">
+        <section class="dashboard-header">
+            <h2>Admin Dashboard</h2>
+            <p>Review properties, manage users and view stats.</p>
+        </section>
+
+        <section id="stats" class="stats-grid" aria-label="Dashboard statistics">
+            <div class="stat-card">
+                <h3 id="totalUsers">0</h3>
+                <p>Total Users</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="totalProperties">0</h3>
+                <p>Total Properties</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="approvedProperties">0</h3>
+                <p>Approved</p>
+            </div>
+            <div class="stat-card pending">
+                <h3 id="pendingProperties">0</h3>
+                <p>Pending Approval</p>
+            </div>
+        </section>
+
+        <section class="management">
+            <div class="dashboard-tabs" role="tablist" aria-label="Admin tabs">
+                <button class="tab-btn active" onclick="showTab('pending')" role="tab">Pending Properties</button>
+                <button class="tab-btn" onclick="showTab('all')" role="tab">All Properties</button>
+                <button class="tab-btn" onclick="showTab('users')" role="tab">Users</button>
+            </div>
+
+            <section id="pendingTab" class="tab-content active" aria-labelledby="pending">
+                <h3>Properties Awaiting Approval</h3>
+                <div id="pendingProperties" class="properties-grid" role="list"></div>
+                <div id="noPending" style="display: none; text-align: center; padding: 40px;">
+                    <p>No pending properties</p>
+                </div>
+            </section>
+
+            <section id="allTab" class="tab-content" aria-hidden="true">
+                <h3>All Properties</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Location</th>
+                                <th>Price</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Owner</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allPropertiesTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="usersTab" class="tab-content" aria-hidden="true">
+                <h3>Registered Users</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <!-- Property Detail Modal -->
+    <div id="propertyModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="propertyDetail"></div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // ✅ Backend API base URL (change if hosted elsewhere)
+        const API_BASE = "http://localhost:5000";
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            await loadStats();
+            await loadPendingProperties();
+        });
+
+        // 🧩 Verify admin auth
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+            if (!token || !user || user.role !== 'admin') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = user.name;
+        }
+
+        // 📊 Load dashboard statistics
+        async function loadStats() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const stats = data.stats;
+                    document.getElementById('totalUsers').textContent = stats.totalUsers;
+                    document.getElementById('totalProperties').textContent = stats.totalProperties;
+                    document.getElementById('approvedProperties').textContent = stats.approvedProperties;
+                    document.getElementById('pendingProperties').textContent = stats.pendingProperties;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // 🏘 Load pending properties
+        async function loadPendingProperties() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/pending`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success && data.properties.length > 0) {
+                    displayPendingProperties(data.properties);
+                } else {
+                    document.getElementById('pendingProperties').style.display = 'none';
+                    document.getElementById('noPending').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading pending properties:', error);
+            }
+        }
+
+        // 🧱 Display pending properties
+        function displayPendingProperties(properties) {
+            const container = document.getElementById('pendingProperties');
+            container.innerHTML = properties.map(property => {
+                const thumb = (property.visibleToAdminPhotos && property.visibleToAdminPhotos[0])
+                    ? property.visibleToAdminPhotos[0]
+                    : (property.images && property.images[0])
+                        ? property.images[0]
+                        : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop';
+
+                return `
+            <div class="property-card">
+                <div class="property-image">
+                    <img src="${thumb}" alt="${property.title}">
+                    <span class="property-badge pending">${property.status}</span>
+                </div>
+                <div class="property-details">
+                    <h3>${property.title}</h3>
+                    <p class="property-location">📍 ${property.location}</p>
+                    <p class="property-price">$${property.price.toLocaleString()}</p>
+                    <p class="property-type">${property.propertyType}</p>
+                    <div class="property-actions">
+                        <button onclick="viewProperty('${property.id}')" class="btn-secondary">View</button>
+                        <button onclick="approveProperty('${property.id}')" class="btn-success">✓ Approve</button>
+                        <button onclick="rejectProperty('${property.id}')" class="btn-danger">✗ Reject</button>
+                    </div>
+                </div>
+            </div>
+        `;
+            }).join('');
+        }
+
+        // 🔍 View property details
+        async function viewProperty(id) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/api/property/${id}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showPropertyModal(data.property);
+                }
+            } catch (error) {
+                console.error('Error loading property:', error);
+            }
+        }
+
+        function showPropertyModal(property) {
+            const modal = document.getElementById('propertyModal');
+            const detail = document.getElementById('propertyDetail');
+
+            const imagesHtml = (property.visibleToAdminPhotos && property.visibleToAdminPhotos.length > 0)
+                ? property.visibleToAdminPhotos.map(img => `<img src="${img}" alt="${property.title}">`).join('')
+                : (property.images && property.images.length > 0)
+                    ? property.images.map(img => `<img src="${img}" alt="${property.title}">`).join('')
+                    : '<img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=500&fit=crop" alt="Property">';
+
+            let docsHtml = '';
+            if (property.documents && property.documents.length > 0) {
+                docsHtml = '<h4>Documents</h4><ul>' + property.documents.map(fn => `
+                <li>
+                    ${fn} - <button class="btn-sm btn-primary" onclick="downloadDocument('${fn}')">Download</button>
+                </li>
+            `).join('') + '</ul>';
+            }
+
+            // Map HTML if coordinates exist
+            let mapHtml = '';
+            if (property.latitude && property.longitude) {
+                mapHtml = `
+                    <div class="property-map-container">
+                        <h4>📍 Property Location</h4>
+                        <div id="propertyMapModal"></div>
+                    </div>
+                `;
+            }
+
+            detail.innerHTML = `
+                <h2>${property.title}</h2>
+                <div class="property-images">
+                    ${imagesHtml}
+                </div>
+                ${mapHtml}
+                <div class="property-info">
+                    <p><strong>Type:</strong> ${property.propertyType}</p>
+                    <p><strong>Location:</strong> ${property.location}</p>
+                    ${property.latitude && property.longitude ? `<p><strong>Coordinates:</strong> ${parseFloat(property.latitude).toFixed(6)}, ${parseFloat(property.longitude).toFixed(6)}</p>` : ''}
+                    <p><strong>Price:</strong> $${property.price.toLocaleString()}</p>
+                    <p><strong>Status:</strong> <span class="badge ${property.status}">${property.status}</span></p>
+                    <p><strong>Description:</strong></p>
+                    <p>${property.description}</p>
+                    ${property.ownerDetails ? `<p><strong>Owner:</strong> ${property.ownerDetails.name} (${property.ownerDetails.email})</p>` : ''}
+                    <p><strong>Listed:</strong> ${new Date(property.createdAt).toLocaleDateString()}</p>
+                    ${docsHtml}
+                </div>
+            `;
+            modal.style.display = 'flex';
+
+            // Initialize map if coordinates exist
+            if (property.latitude && property.longitude) {
+                setTimeout(() => {
+                    initAdminMap(property.latitude, property.longitude, property.title);
+                }, 100);
+            }
+        }
+
+        // Initialize map in admin modal
+        let adminMap;
+        let adminMarker;
+
+        function initAdminMap(lat, lng, title) {
+            // Load Leaflet.js if not already loaded
+            if (typeof L === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+                script.crossOrigin = '';
+                script.onload = () => renderAdminMap(lat, lng, title);
+                document.head.appendChild(script);
+            } else {
+                renderAdminMap(lat, lng, title);
+            }
+        }
+
+        function renderAdminMap(lat, lng, title) {
+            try {
+                // Clear existing map if any
+                if (adminMap) {
+                    adminMap.remove();
+                }
+
+                // Initialize the map
+                adminMap = L.map('propertyMapModal').setView([parseFloat(lat), parseFloat(lng)], 16);
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19,
+                }).addTo(adminMap);
+
+                // Add marker
+                adminMarker = L.marker([parseFloat(lat), parseFloat(lng)]).addTo(adminMap);
+                adminMarker.bindPopup(`<b>${title}</b><br>Property Location`).openPopup();
+
+            } catch (error) {
+                console.error('Error loading map:', error);
+                document.getElementById('propertyMapModal').innerHTML = `
+                    <div class="map-placeholder">
+                        <p>Unable to load map</p>
+                        <p style="font-size: 0.9rem;">Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('propertyModal').style.display = 'none';
+            // Clean up map
+            if (typeof adminMap !== 'undefined' && adminMap) {
+                adminMap.remove();
+                adminMap = null;
+            }
+        }
+
+        // Download private document (admin only)
+        async function downloadDocument(filename) {
+            if (!confirm('Download this document?')) return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/document/${filename}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    showNotification('Failed to download document', 'error');
+                    return;
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error(e);
+                showNotification('Network error', 'error');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('propertyModal').style.display = 'none';
+        }
+
+        // ✅ Approve property
+        async function approveProperty(id) {
+            if (!confirm('Approve this property?')) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/approve/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Property approved successfully', 'success');
+                    await loadStats();
+                    await loadPendingProperties();
+                } else {
+                    showNotification(data.message || 'Failed to approve', 'error');
+                }
+            } catch {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        // ❌ Reject property
+        async function rejectProperty(id) {
+            const reason = prompt('Enter rejection reason (optional):');
+            if (reason === null) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/reject/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Property rejected', 'success');
+                    await loadStats();
+                    await loadPendingProperties();
+                } else {
+                    showNotification(data.message || 'Failed to reject', 'error');
+                }
+            } catch {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        // 📋 Load all properties
+        async function loadAllProperties() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/properties`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAllProperties(data.properties);
+                }
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        function displayAllProperties(properties) {
+            const tbody = document.getElementById('allPropertiesTable');
+            tbody.innerHTML = properties.map(property => `
+            <tr>
+                <td>${property.title}</td>
+                <td>${property.location}</td>
+                <td>$${property.price.toLocaleString()}</td>
+                <td>${property.propertyType}</td>
+                <td><span class="badge ${property.status}">${property.status}</span></td>
+                <td>${property.ownerName || 'N/A'}</td>
+                <td><button onclick="viewProperty('${property.id}')" class="btn-sm btn-secondary">View</button></td>
+            </tr>
+        `).join('');
+        }
+
+        // 👥 Load all users
+        async function loadUsers() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsers(data.users);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTable');
+            tbody.innerHTML = users.map(user => `
+            <tr>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge ${user.role}">${user.role}</span></td>
+                <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                <td>
+                    ${user.role !== 'admin'
+                    ? `<button onclick="deleteUser('${user.id}')" class="btn-sm btn-danger">Delete</button>`
+                    : '<span style="color: #999;">Protected</span>'}
+                </td>
+            </tr>
+        `).join('');
+        }
+
+        // 🗑 Delete user
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/user/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('User deleted successfully', 'success');
+                    await loadUsers();
+                    await loadStats();
+                } else {
+                    showNotification(data.message || 'Failed to delete user', 'error');
+                }
+            } catch {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        // 🧭 Tab switcher
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (tabName === 'pending') {
+                document.getElementById('pendingTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else if (tabName === 'all') {
+                document.getElementById('allTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                loadAllProperties();
+            } else if (tabName === 'users') {
+                document.getElementById('usersTab').classList.add('active');
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                loadUsers();
+            }
+        }
+
+        // 🚪 Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // 🪟 Close modal on outside click
+        window.onclick = function (event) {
+            const modal = document.getElementById('propertyModal');
+            if (event.target === modal) closeModal();
+        };
+
+        // 🔔 Notification helper (optional)
+        function showNotification(message, type = 'info') {
+            alert(`${type.toUpperCase()}: ${message}`);
+        }
+    </script>
+</body>
+
+</html>

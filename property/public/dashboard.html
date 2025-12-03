@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Property Management System</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Leaflet CSS for OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="container">
+      <div class="nav-brand">
+        <h1>🏠 PropertyHub</h1>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <span id="userName"></span>
+        <span id="userRole" class="user-role"></span>
+        <button onclick="logout()" class="btn-danger">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Dashboard Content -->
+  <section class="dashboard-section">
+    <div class="container">
+      <div class="dashboard-header">
+        <h2>Dashboard</h2>
+        <p id="welcomeMessage">Welcome back!</p>
+      </div>
+
+      <!-- ================= ADMIN DASHBOARD (COUNTS) ================= -->
+      <div id="adminDashboard" style="display: none;">
+        <section class="stats-section">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3 id="ownerCount">0</h3>
+              <p>Total Owners</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="tenantCount">0</h3>
+              <p>Total Tenants</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="totalPropertyCount">0</h3>
+              <p>Total Properties</p>
+            </div>
+            <div class="stat-card pending">
+              <h3 id="pendingPropertyCount">0</h3>
+              <p>Pending Properties</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= OWNER DASHBOARD ================= -->
+      <div id="ownerDashboard" style="display: none;">
+        <div class="dashboard-actions">
+          <a href="add-property.html" class="btn-primary">+ Add New Property</a>
+        </div>
+
+        <div class="dashboard-tabs">
+          <button class="tab-btn active" onclick="showTab('myProperties')">My Properties</button>
+          <button class="tab-btn" onclick="showTab('messages')">Messages</button>
+        </div>
+
+        <!-- My Properties Tab -->
+        <div id="myPropertiesTab" class="tab-content active">
+          <div id="ownerProperties" class="properties-grid"></div>
+          <div id="noOwnerProperties" style="display: none; text-align: center; padding: 40px;">
+            <p>You haven't listed any properties yet.</p>
+            <a href="add-property.html" class="btn-primary">Add Your First Property</a>
+          </div>
+        </div>
+
+        <!-- Owner Messages Tab -->
+        <div id="ownerMessagesTab" class="tab-content">
+          <div id="ownerMessages"></div>
+        </div>
+      </div>
+
+      <!-- ================= TENANT DASHBOARD ================= -->
+      <div id="tenantDashboard" style="display: none;">
+        <div class="dashboard-tabs">
+          <button class="tab-btn active" onclick="showTab('browse')">Browse Properties</button>
+          <button class="tab-btn" onclick="showTab('messages')">Messages</button>
+        </div>
+
+        <!-- Browse Properties Tab -->
+        <div id="browseTab" class="tab-content active">
+          <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search properties..." class="form-input">
+            <select id="filterType" class="form-input" onchange="filterProperties()">
+              <option value="">All Types</option>
+              <option value="house">House</option>
+              <option value="apartment">Apartment</option>
+              <option value="plot">Plot</option>
+            </select>
+          </div>
+          <div id="tenantProperties" class="properties-grid"></div>
+        </div>
+
+        <!-- Tenant Messages Tab -->
+        <div id="tenantMessagesTab" class="tab-content">
+          <div id="tenantMessages"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Property Detail Modal -->
+  <div id="propertyModal" class="modal">
+    <div class="modal-content modal-large">
+      <span class="close" onclick="closePropertyModal()">&times;</span>
+      <div id="propertyDetail"></div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <script>
+    const API_BASE = "http://localhost:5000";
+    let currentUser = null;
+    const socket = io(API_BASE);
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await checkAuthentication();
+      await loadDashboard();
+    });
+
+    // ===================== AUTH =====================
+    async function checkAuthentication() {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+      if (!token || !user) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      currentUser = user;
+      document.getElementById('userName').textContent = user.name;
+      document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.name}!`;
+
+      const roleSpan = document.getElementById('userRole');
+      if (roleSpan) {
+        let roleLabel = '';
+        if (user.role === 'owner') roleLabel = 'Owner';
+        else if (user.role === 'tenant') roleLabel = 'Tenant';
+        else if (user.role === 'admin') roleLabel = 'Admin';
+        else roleLabel = user.role || '';
+
+        roleSpan.textContent = roleLabel ? `(${roleLabel})` : '';
+      }
+    }
+
+    // ===================== DASHBOARD =====================
+    async function loadDashboard() {
+      if (currentUser.role === 'admin') {
+        document.getElementById('adminDashboard').style.display = 'block';
+        await loadAdminStats();
+      } else if (currentUser.role === 'owner') {
+        document.getElementById('ownerDashboard').style.display = 'block';
+        await loadOwnerProperties();
+      } else if (currentUser.role === 'tenant') {
+        document.getElementById('tenantDashboard').style.display = 'block';
+        await loadTenantProperties();
+      }
+    }
+
+    // ===================== ADMIN STATS =====================
+    async function loadAdminStats() {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+
+        if (data.success && data.stats) {
+          const stats = data.stats;
+          document.getElementById('ownerCount').textContent = stats.totalOwners ?? 0;
+          document.getElementById('tenantCount').textContent = stats.totalTenants ?? 0;
+          document.getElementById('pendingPropertyCount').textContent = stats.pendingProperties ?? 0;
+          document.getElementById('totalPropertyCount').textContent = stats.totalProperties ?? 0;
+        } else {
+          console.warn('Stats response invalid:', data);
+        }
+      } catch (err) {
+        console.error('Error loading admin stats:', err);
+      }
+    }
+
+    // ===================== OWNER PROPERTIES =====================
+    async function loadOwnerProperties() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_BASE}/api/property/mine`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.success && data.properties.length > 0) {
+          displayOwnerProperties(data.properties);
+        } else {
+          document.getElementById('ownerProperties').style.display = 'none';
+          document.getElementById('noOwnerProperties').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error loading properties:', error);
+      }
+    }
+
+    function displayOwnerProperties(properties) {
+      const container = document.getElementById('ownerProperties');
+      container.innerHTML = properties.map(property => `
+        <div class="property-card">
+          <div class="property-image">
+            <img src="${property.images && property.images[0] ? property.images[0] : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop'}" alt="${property.title}">
+            <span class="property-badge ${property.status}">${property.status}</span>
+          </div>
+          <div class="property-details">
+            <h3>${property.title}</h3>
+            <p class="property-location">📍 ${property.location}</p>
+            <p class="property-price">$${property.price.toLocaleString()}</p>
+            <div class="property-actions">
+              <button onclick="viewPropertyDetails('${property.id}')" class="btn-secondary">View</button>
+              <button onclick="editProperty('${property.id}')" class="btn-primary">Edit</button>
+              <button onclick="deleteProperty('${property.id}')" class="btn-danger">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ===================== TENANT PROPERTIES =====================
+    async function loadTenantProperties() {
+      try {
+        const response = await fetch(`${API_BASE}/api/property/list`);
+        const data = await response.json();
+        if (data.success && data.properties.length > 0) {
+          displayTenantProperties(data.properties);
+        }
+      } catch (error) {
+        console.error('Error loading properties:', error);
+      }
+    }
+
+    function displayTenantProperties(properties) {
+      const container = document.getElementById('tenantProperties');
+      container.innerHTML = properties.map(property => `
+        <div class="property-card">
+          <div class="property-image">
+            <img src="${property.images && property.images[0] ? property.images[0] : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop'}" alt="${property.title}">
+            <span class="property-badge">${property.propertyType}</span>
+          </div>
+          <div class="property-details">
+            <h3>${property.title}</h3>
+            <p class="property-location">📍 ${property.location}</p>
+            <p class="property-description">${property.description.substring(0, 80)}...</p>
+            <div class="property-footer">
+              <span class="property-price">$${property.price.toLocaleString()}</span>
+              <button onclick="viewPropertyDetails('${property.id}')" class="btn-secondary">View Details</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ===================== PROPERTY DETAILS =====================
+    async function viewPropertyDetails(id) {
+      try {
+        const response = await fetch(`${API_BASE}/api/property/${id}`);
+        const data = await response.json();
+        if (data.success) showPropertyModal(data.property);
+      } catch (error) {
+        console.error('Error loading property:', error);
+      }
+    }
+
+    function showPropertyModal(property) {
+      const modal = document.getElementById('propertyModal');
+      const detail = document.getElementById('propertyDetail');
+
+      // Map HTML if coordinates exist
+      let mapHtml = '';
+      if (property.latitude && property.longitude) {
+        mapHtml = `
+          <div class="property-map-container">
+            <h3>📍 Property Location</h3>
+            <div id="propertyMapDashboard"></div>
+          </div>
+        `;
+      }
+
+      detail.innerHTML = `
+        <h2>${property.title}</h2>
+        <div class="property-images">
+          ${property.images?.length
+          ? property.images.map(img => `<img src="${img}" alt="${property.title}">`).join('')
+          : '<img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&h=500&fit=crop" alt="Property">'}
+        </div>
+        ${mapHtml}
+        <div class="property-info">
+          <p><strong>Location:</strong> ${property.location}</p>
+          ${property.latitude && property.longitude ? `<p><strong>Coordinates:</strong> ${parseFloat(property.latitude).toFixed(6)}, ${parseFloat(property.longitude).toFixed(6)}</p>` : ''}
+          <p><strong>Type:</strong> ${property.propertyType}</p>
+          <p><strong>Price:</strong> $${property.price.toLocaleString()}</p>
+          ${property.status ? `<p><strong>Status:</strong> <span class="badge ${property.status}">${property.status}</span></p>` : ''}
+          <p><strong>Description:</strong> ${property.description}</p>
+          ${property.ownerDetails ? `<p><strong>Owner:</strong> ${property.ownerDetails.name}</p>` : ''}
+        </div>
+        ${currentUser.role === 'tenant' && property.ownerId ? `
+          <button onclick="openChat('${property.ownerId}', '${property.ownerDetails?.name || 'Owner'}')" class="btn-primary">
+            💬 Contact Owner
+          </button>` : ''}
+      `;
+      modal.style.display = 'block';
+
+      // Initialize map if coordinates exist
+      if (property.latitude && property.longitude) {
+        setTimeout(() => {
+          initDashboardMap(property.latitude, property.longitude, property.title);
+        }, 100);
+      }
+    }
+
+    // Initialize map in dashboard modal
+    let dashboardMap;
+    let dashboardMarker;
+
+    function initDashboardMap(lat, lng, title) {
+      // Load Leaflet.js if not already loaded
+      if (typeof L === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+        script.crossOrigin = '';
+        script.onload = () => renderDashboardMap(lat, lng, title);
+        document.head.appendChild(script);
+      } else {
+        renderDashboardMap(lat, lng, title);
+      }
+    }
+
+    function renderDashboardMap(lat, lng, title) {
+      try {
+        // Clear existing map if any
+        if (dashboardMap) {
+          dashboardMap.remove();
+        }
+
+        // Initialize the map
+        dashboardMap = L.map('propertyMapDashboard').setView([parseFloat(lat), parseFloat(lng)], 16);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(dashboardMap);
+
+        // Add marker
+        dashboardMarker = L.marker([parseFloat(lat), parseFloat(lng)]).addTo(dashboardMap);
+        dashboardMarker.bindPopup(`<b>${title}</b><br>Property Location`).openPopup();
+
+      } catch (error) {
+        console.error('Error loading map:', error);
+        document.getElementById('propertyMapDashboard').innerHTML = `
+          <div class="map-placeholder">
+            <p>Unable to load map</p>
+            <p style="font-size: 0.9rem;">Location: ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+          </div>
+        `;
+      }
+    }
+
+    function closePropertyModal() {
+      document.getElementById('propertyModal').style.display = 'none';
+      // Clean up map
+      if (dashboardMap) {
+        dashboardMap.remove();
+        dashboardMap = null;
+      }
+    }
+
+    // ===================== PROPERTY ACTIONS =====================
+    async function deleteProperty(id) {
+      if (!confirm('Are you sure you want to delete this property?')) return;
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_BASE}/api/property/delete/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert('Property deleted successfully');
+          await loadOwnerProperties();
+        } else {
+          alert(data.message || 'Failed to delete property');
+        }
+      } catch {
+        alert('Network error');
+      }
+    }
+
+    function editProperty(id) {
+      window.location.href = `add-property.html?edit=${id}`;
+    }
+
+    function openChat(receiverId, receiverName) {
+      window.location.href = `chat.html?receiver=${receiverId}&name=${receiverName}`;
+    }
+
+    // ===================== MESSAGES =====================
+    async function loadMessages() {
+      const token = localStorage.getItem('token');
+      const isOwner = currentUser.role === 'owner';
+      const container = isOwner
+        ? document.getElementById('ownerMessages')
+        : document.getElementById('tenantMessages');
+
+      container.innerHTML = '<p>Loading messages...</p>';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/messages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+
+        if (data.success && data.messages.length > 0) {
+          const uniqueChats = {};
+          const myId = String(currentUser.id);
+
+          data.messages.forEach(msg => {
+            const senderId = String(msg.senderId);
+            const receiverId = String(msg.receiverId);
+            const isSender = senderId === myId;
+            const otherUser = isSender ? msg.receiver : msg.sender;
+            if (!otherUser || !otherUser.id) return;
+
+            if (!uniqueChats[otherUser.id]) {
+              uniqueChats[otherUser.id] = {
+                user: otherUser,
+                lastMessage: msg.message,
+                time: new Date(msg.timestamp).toLocaleString()
+              };
+            } else {
+              const prevTime = new Date(uniqueChats[otherUser.id].time);
+              const newTime = new Date(msg.timestamp);
+              if (newTime > prevTime) {
+                uniqueChats[otherUser.id].lastMessage = msg.message;
+                uniqueChats[otherUser.id].time = newTime.toLocaleString();
+              }
+            }
+          });
+
+          const chatArray = Object.values(uniqueChats).sort(
+            (a, b) => new Date(b.time) - new Date(a.time)
+          );
+
+          container.innerHTML = chatArray.length
+            ? chatArray.map(chat => `
+              <div class="message-card">
+                <div class="message-user">
+                  <h4>${chat.user.name || 'User'}</h4>
+                  <p>${chat.lastMessage}</p>
+                </div>
+                <div class="message-meta">
+                  <span>${chat.time}</span>
+                  <button onclick="openChat('${chat.user.id}', '${chat.user.name || 'User'}')" class="btn-secondary">
+                    💬 Chat
+                  </button>
+                </div>
+              </div>`).join('')
+            : '<p>No messages yet.</p>';
+        } else {
+          container.innerHTML = '<p>No messages yet.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        container.innerHTML = '<p>Failed to load messages.</p>';
+      }
+    }
+
+    // ===================== TAB SWITCH (ROLE-AWARE) =====================
+    function showTab(tabName) {
+      if (!currentUser) return;
+
+      if (currentUser.role === 'owner') {
+        const contents = {
+          myProperties: document.getElementById('myPropertiesTab'),
+          messages: document.getElementById('ownerMessagesTab')
+        };
+        const buttons = document.querySelectorAll('#ownerDashboard .tab-btn');
+
+        Object.values(contents).forEach(c => c.classList.remove('active'));
+        buttons.forEach(b => b.classList.remove('active'));
+
+        if (tabName === 'myProperties') {
+          contents.myProperties.classList.add('active');
+          buttons[0].classList.add('active');
+        } else if (tabName === 'messages') {
+          contents.messages.classList.add('active');
+          buttons[1].classList.add('active');
+          loadMessages();
+        }
+      } else if (currentUser.role === 'tenant') {
+        const contents = {
+          browse: document.getElementById('browseTab'),
+          messages: document.getElementById('tenantMessagesTab')
+        };
+        const buttons = document.querySelectorAll('#tenantDashboard .tab-btn');
+
+        Object.values(contents).forEach(c => c.classList.remove('active'));
+        buttons.forEach(b => b.classList.remove('active'));
+
+        if (tabName === 'browse') {
+          contents.browse.classList.add('active');
+          buttons[0].classList.add('active');
+        } else if (tabName === 'messages') {
+          contents.messages.classList.add('active');
+          buttons[1].classList.add('active');
+          loadMessages();
+        }
+      }
+      // Admin currently has no tabs; only stats.
+    }
+
+    // ===================== LOGOUT =====================
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }
+
+    // ===================== MODAL CLOSE =====================
+    window.onclick = function (event) {
+      const modal = document.getElementById('propertyModal');
+      if (event.target == modal) closePropertyModal();
+    };
+
+    // ===================== REAL-TIME UPDATE =====================
+    socket.on('new-dashboard-message', (msg) => {
+      if (!currentUser) return;
+      if (msg.senderId === String(currentUser.id) || msg.receiverId === String(currentUser.id)) {
+        loadMessages();
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Property - Property Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="dashboard.html">Dashboard</a>
+                <span id="userName"></span>
+                <button onclick="logout()" class="btn-danger">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Add Property Form -->
+    <section class="form-section">
+        <div class="container">
+            <div class="form-card">
+                <h2 id="formTitle">Add New Property</h2>
+                <p class="form-subtitle">Fill in the details below</p>
+
+                <form id="propertyForm" onsubmit="handleSubmit(event)" enctype="multipart/form-data">
+                    <div class="form-grid">
+
+                        <!-- Property Title -->
+                        <div class="form-group">
+                            <label for="title">Property Title *</label>
+                            <input type="text" id="title" name="title" class="form-input" required>
+                        </div>
+
+                        <!-- Property Type -->
+                        <div class="form-group">
+                            <label for="propertyType">Property Type *</label>
+                            <select id="propertyType" name="propertyType" class="form-input" required>
+                                <option value="">Select Type</option>
+                                <option value="house">House</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="plot">Plot</option>
+                            </select>
+                        </div>
+
+                        <!-- District Dropdown -->
+                        <div class="form-group">
+                            <label for="district">District (Karnataka) *</label>
+                            <select id="district" name="district" class="form-input" required>
+                                <option value="">Select District</option>
+                                <option value="Bagalkot">Bagalkot</option>
+                                <option value="Ballari">Ballari</option>
+                                <option value="Belagavi">Belagavi</option>
+                                <option value="Bengaluru Rural">Bengaluru Rural</option>
+                                <option value="Bengaluru Urban">Bengaluru Urban</option>
+                                <option value="Bidar">Bidar</option>
+                                <option value="Chamarajanagar">Chamarajanagar</option>
+                                <option value="Chikkaballapura">Chikkaballapura</option>
+                                <option value="Chikkamagaluru">Chikkamagaluru</option>
+                                <option value="Chitradurga">Chitradurga</option>
+                                <option value="Dakshina Kannada">Dakshina Kannada</option>
+                                <option value="Davanagere">Davanagere</option>
+                                <option value="Dharwad">Dharwad</option>
+                                <option value="Gadag">Gadag</option>
+                                <option value="Hassan">Hassan</option>
+                                <option value="Haveri">Haveri</option>
+                                <option value="Kalaburagi">Kalaburagi</option>
+                                <option value="Kodagu">Kodagu</option>
+                                <option value="Kolar">Kolar</option>
+                                <option value="Koppal">Koppal</option>
+                                <option value="Mandya">Mandya</option>
+                                <option value="Mysuru">Mysuru</option>
+                                <option value="Raichur">Raichur</option>
+                                <option value="Ramanagara">Ramanagara</option>
+                                <option value="Shivamogga">Shivamogga</option>
+                                <option value="Tumakuru">Tumakuru</option>
+                                <option value="Udupi">Udupi</option>
+                                <option value="Uttara Kannada">Uttara Kannada</option>
+                                <option value="Vijayanagara">Vijayanagara</option>
+                                <option value="Vijayapura">Vijayapura</option>
+                                <option value="Yadgir">Yadgir</option>
+                            </select>
+                        </div>
+
+                        <!-- Taluka Dropdown -->
+                        <div class="form-group">
+                            <label for="taluka">Taluka *</label>
+                            <select id="taluka" name="taluka" class="form-input" required>
+                                <option value="">Select Taluka</option>
+                            </select>
+                        </div>
+
+                        <!-- CITY INPUT BOX -->
+                        <div class="form-group">
+                            <label for="city">City *</label>
+                            <input type="text" id="city" name="city" class="form-input" placeholder="Enter City Name"
+                                required>
+                        </div>
+
+                        <!-- Latitude Input -->
+                        <div class="form-group">
+                            <label for="latitude">Latitude</label>
+                            <input type="number" step="any" id="latitude" name="latitude" class="form-input"
+                                placeholder="e.g., 12.971600">
+                            <small>Enter manually or click "Capture Location" button</small>
+                        </div>
+
+                        <!-- Longitude Input -->
+                        <div class="form-group">
+                            <label for="longitude">Longitude</label>
+                            <input type="number" step="any" id="longitude" name="longitude" class="form-input"
+                                placeholder="e.g., 77.594600">
+                            <small>Enter manually or click "Capture Location" button</small>
+                        </div>
+
+                        <!-- Location Capture Button -->
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <button type="button" onclick="captureLocation()" class="btn-success" id="captureBtn">
+                                📍 Capture Current Location
+                            </button>
+                            <div id="locationStatus" class="location-status" style="display: none; margin-top: 1rem;">
+                                <span class="location-icon">📍</span>
+                                <span id="locationText"></span>
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="form-group">
+                            <label for="price">Price (₹) *</label>
+                            <input type="number" id="price" name="price" class="form-input" min="0" required>
+                        </div>
+
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea id="description" name="description" class="form-input" rows="5" required></textarea>
+                    </div>
+
+                    <!-- Images Upload (KEEP) -->
+                    <div class="form-group">
+                        <label for="images">Property Images (Max 5)</label>
+                        <input type="file" id="images" name="images" class="form-input" accept="image/*" multiple>
+                        <small>Accepted formats: JPG, PNG, GIF (Max 5MB each)</small>
+                    </div>
+
+                    <div id="imagePreview" class="image-preview"></div>
+
+                    <!-- NEW: Property Documents Upload -->
+                    <div class="form-group">
+                        <label for="documents">Property Documents</label>
+                        <input type="file" id="documents" name="documents" class="form-input"
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" multiple>
+                        <small>Upload sale deed, tax receipt, khata, etc. (Max 5 files, 10MB each)</small>
+                    </div>
+
+                    <div id="documentsList" class="documents-list"></div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="submitBtn">Submit Property</button>
+                        <a href="dashboard.html" class="btn-secondary">Cancel</a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Uploading...</p>
+    </div>
+
+    <script>
+        let editMode = false;
+        let editPropertyId = null;
+
+        /* --- TALUKA DATA --- */
+        const talukaData = {
+            "Bagalkot": ["Bagalkot", "Badami", "Hunagund", "Jamakhandi", "Mudhol", "Bilagi"],
+            "Ballari": ["Ballari", "Hagaribommanahalli", "Hadagalli", "Harapanahalli", "Sandur", "Siruguppa", "Kudligi"],
+            "Belagavi": ["Belagavi", "Athani", "Bailhongal", "Chikkodi", "Gokak", "Hukkeri", "Khanapur", "Ramdurg", "Raybag", "Savadatti"],
+            "Bengaluru Rural": ["Nelamangala", "Doddaballapura", "Hoskote", "Devanahalli"],
+            "Bengaluru Urban": ["Anekal", "Yelahanka", "Bengaluru North", "Bengaluru South", "Bengaluru East"],
+            "Bidar": ["Aurad", "Basavakalyan", "Bhalki", "Bidar", "Humnabad"],
+            "Chamarajanagar": ["Chamarajanagar", "Gundlupet", "Kollegal", "Yelandur"],
+            "Chikkaballapura": ["Chikkaballapura", "Chintamani", "Sidlaghatta", "Gudibanda", "Gauribidanur", "Bagepalli"],
+            "Chikkamagaluru": ["Chikkamagaluru", "Kadur", "Mudigere", "Narasimharajapura", "Sringeri", "Tarikere"],
+            "Chitradurga": ["Chitradurga", "Hiriyur", "Holalkere", "Hosadurga", "Molakalmuru"],
+            "Dakshina Kannada": ["Mangaluru", "Bantwal", "Belthangady", "Puttur", "Sullia"],
+            "Davanagere": ["Davanagere", "Harihara", "Harapanahalli", "Jagalur", "Channagiri", "Honnali"],
+            "Dharwad": ["Dharwad", "Hubballi", "Kalghatgi", "Kundgol", "Navalgund"],
+            "Gadag": ["Gadag", "Mundargi", "Nargund", "Ron", "Shirahatti"],
+            "Hassan": ["Hassan", "Alur", "Arkalgud", "Belur", "Channarayapatna", "Holenarasipura", "Sakleshpur"],
+            "Haveri": ["Haveri", "Byadagi", "Hanagal", "Hirekerur", "Ranebennur", "Savanur", "Shiggaon"],
+            "Kalaburagi": ["Kalaburagi", "Aland", "Chincholi", "Chittapur", "Jevargi", "Sedam"],
+            "Kodagu": ["Madikeri", "Somwarpet", "Virajpet"],
+            "Kolar": ["Kolar", "Bangarapet", "Malur", "Mulbagal", "Srinivaspur"],
+            "Koppal": ["Koppal", "Gangavathi", "Kushtagi", "karatagi", "Yelburga"],
+            "Mandya": ["Mandya", "Krishnarajpet", "Nagamangala", "Pandavapura", "Shrirangapattana", "Malavalli"],
+            "Mysuru": ["Mysuru", "Nanjangudu", "T. Narasipura", "Hunsur", "Krishnarajanagara", "Piriyapatna"],
+            "Raichur": ["Raichur", "Sindhanur", "Manvi", "Lingasugur", "Devadurga"],
+            "Ramanagara": ["Ramanagara", "Kanakapura", "Channapatna", "Magadi"],
+            "Shivamogga": ["Shivamogga", "Bhadravati", "Hosanagara", "Sagara", "Shikaripura", "Sorab"],
+            "Tumakuru": ["Tumakuru", "Gubbi", "Koratagere", "Kunigal", "Madhugiri", "Pavagada", "Sira", "Tiptur"],
+            "Udupi": ["Udupi", "Karkala", "Kundapura"],
+            "Uttara Kannada": ["Karwar", "Ankola", "Sirsi", "Yellapur", "Dandeli", "Bhatkal", "Honnavar", "Kumta"],
+            "Vijayanagara": ["Hospet", "Hagaribommanahalli", "Kottur", "Harapanahalli"],
+            "Vijayapura": ["Vijayapura", "Basavana Bagewadi", "Indi", "Sindagi", "Muddebihal"],
+            "Yadgir": ["Yadgir", "Shahapur", "Surapura"]
+        };
+
+        /* Populate Talukas */
+        function populateTalukas(district) {
+            const talukaSelect = document.getElementById('taluka');
+            talukaSelect.innerHTML = '<option value="">Select Taluka</option>';
+
+            if (district && talukaData[district]) {
+                talukaData[district].forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t;
+                    option.textContent = t;
+                    talukaSelect.appendChild(option);
+                });
+            }
+        }
+
+        document.getElementById('district').addEventListener('change', function () {
+            populateTalukas(this.value);
+        });
+
+        /* --- REVERSE GEOCODING & AUTO-FILL --- */
+        let _reverseDebounce = null;
+
+        async function reverseGeocodeAndFill(lat, lon) {
+            try {
+                // Nominatim reverse geocode
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
+                const res = await fetch(url, { method: 'GET' });
+                if (!res.ok) return false;
+                const data = await res.json();
+                const addr = data.address || {};
+
+                // Determine city/locality
+                const city = addr.city || addr.town || addr.village || addr.hamlet || addr.suburb || addr.locality || '';
+
+                // Determine district (try multiple fields returned by OSM)
+                let district = addr.state_district || addr.county || addr.district || addr.region || addr.state || '';
+
+                // Normalize and try to match to one of our district keys
+                let matchedDistrict = '';
+                if (district) {
+                    const cand = district.trim().toLowerCase();
+                    for (const k of Object.keys(talukaData)) {
+                        if (k.toLowerCase() === cand) { matchedDistrict = k; break; }
+                    }
+                    if (!matchedDistrict) {
+                        for (const k of Object.keys(talukaData)) {
+                            if (cand.includes(k.toLowerCase()) || k.toLowerCase().includes(cand)) { matchedDistrict = k; break; }
+                        }
+                    }
+                }
+
+                // If still not matched, also try using the state_district / county pieces more aggressively
+                if (!matchedDistrict && addr.county) {
+                    const c = addr.county.trim().toLowerCase();
+                    for (const k of Object.keys(talukaData)) {
+                        if (k.toLowerCase().includes(c) || c.includes(k.toLowerCase())) { matchedDistrict = k; break; }
+                    }
+                }
+
+                // Fill city if found
+                if (city) {
+                    document.getElementById('city').value = city;
+                }
+
+                // Fill district and populate talukas if matched
+                if (matchedDistrict) {
+                    document.getElementById('district').value = matchedDistrict;
+                    populateTalukas(matchedDistrict);
+
+                    // Try to infer taluka: look for a taluka name matching city/suburb or other address parts
+                    const talukaCandidates = talukaData[matchedDistrict] || [];
+                    const talukaFields = [addr.town, addr.village, addr.suburb, addr.city, addr.hamlet, addr.municipality, addr.locality];
+                    let matchedTaluka = '';
+                    for (const field of talukaFields) {
+                        if (!field) continue;
+                        const f = field.trim().toLowerCase();
+                        for (const t of talukaCandidates) {
+                            if (t.toLowerCase() === f || f.includes(t.toLowerCase()) || t.toLowerCase().includes(f)) {
+                                matchedTaluka = t;
+                                break;
+                            }
+                        }
+                        if (matchedTaluka) break;
+                    }
+
+                    if (matchedTaluka) {
+                        document.getElementById('taluka').value = matchedTaluka;
+                    }
+
+                    return true;
+                }
+
+                // If nothing matched to district, still return whether we filled any city
+                return !!city;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        // When user manually enters lat/lon, attempt reverse geocode (debounced)
+        function tryReverseFromInputs() {
+            clearTimeout(_reverseDebounce);
+            _reverseDebounce = setTimeout(() => {
+                const latVal = parseFloat(document.getElementById('latitude').value);
+                const lonVal = parseFloat(document.getElementById('longitude').value);
+                if (!isNaN(latVal) && !isNaN(lonVal)) {
+                    const locationStatus = document.getElementById('locationStatus');
+                    const locationText = document.getElementById('locationText');
+                    locationStatus.style.display = 'flex';
+                    locationText.textContent = '📍 Resolving address from entered coordinates...';
+                    locationStatus.style.backgroundColor = '#fff3cd';
+                    locationStatus.style.borderColor = '#ffc107';
+                    reverseGeocodeAndFill(latVal, lonVal).then(success => {
+                        if (success) {
+                            locationText.textContent = `✅ Address populated from coordinates`;
+                            locationStatus.style.backgroundColor = '#d4edda';
+                            locationStatus.style.borderColor = '#28a745';
+                        } else {
+                            locationText.textContent = `❌ Could not resolve address from coordinates`;
+                            locationStatus.style.backgroundColor = '#fee';
+                            locationStatus.style.borderColor = '#dc3545';
+                        }
+                    });
+                }
+            }, 800);
+        }
+
+        document.getElementById('latitude').addEventListener('change', tryReverseFromInputs);
+        document.getElementById('longitude').addEventListener('change', tryReverseFromInputs);
+
+        /* --- AUTH & EDIT MODE --- */
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            checkEditMode();
+        });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+            if (!token || !user || user.role !== 'owner') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            document.getElementById('userName').textContent = user.name;
+        }
+
+        /* --- GEOLOCATION CAPTURE (BUTTON-TRIGGERED) --- */
+        let locationCaptured = false;
+
+        function captureLocation() {
+            const locationStatus = document.getElementById('locationStatus');
+            const locationText = document.getElementById('locationText');
+            const captureBtn = document.getElementById('captureBtn');
+
+            locationStatus.style.display = 'flex';
+
+            if (!navigator.geolocation) {
+                locationText.textContent = '❌ Geolocation is not supported by your browser';
+                locationStatus.style.backgroundColor = '#fee';
+                locationStatus.style.borderColor = '#fcc';
+                return;
+            }
+
+            locationText.textContent = '📍 Capturing your location...';
+            locationStatus.style.backgroundColor = '#fff3cd';
+            locationStatus.style.borderColor = '#ffc107';
+            captureBtn.disabled = true;
+            captureBtn.textContent = '⏳ Capturing...';
+
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    document.getElementById('latitude').value = lat;
+                    document.getElementById('longitude').value = lng;
+
+                    // Show captured coords and start reverse geocoding to auto-fill address
+                    locationText.textContent = `📍 Location captured: ${lat.toFixed(6)}, ${lng.toFixed(6)} — resolving address...`;
+                    locationStatus.style.backgroundColor = '#fff3cd';
+                    locationStatus.style.borderColor = '#ffc107';
+                    captureBtn.disabled = false;
+                    captureBtn.textContent = '⏳ Resolving Address...';
+                    locationCaptured = true;
+
+                    // Attempt reverse geocoding to auto-fill city/district/taluka
+                    reverseGeocodeAndFill(lat, lng)
+                        .then(success => {
+                            if (success) {
+                                locationText.textContent = `✅ Location & address detected: ${document.getElementById('city').value || ''} ${document.getElementById('taluka').value ? ', ' + document.getElementById('taluka').value : ''} ${document.getElementById('district').value ? ', ' + document.getElementById('district').value : ''}`;
+                                locationStatus.style.backgroundColor = '#d4edda';
+                                locationStatus.style.borderColor = '#28a745';
+                                captureBtn.textContent = '✅ Location Captured';
+                            } else {
+                                locationText.textContent = `✅ Location captured: ${lat.toFixed(6)}, ${lng.toFixed(6)} (address not found)`;
+                                locationStatus.style.backgroundColor = '#d4edda';
+                                locationStatus.style.borderColor = '#28a745';
+                                captureBtn.textContent = '✅ Location Captured';
+                            }
+                        })
+                        .catch(() => {
+                            locationText.textContent = `✅ Location captured: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                            locationStatus.style.backgroundColor = '#d4edda';
+                            locationStatus.style.borderColor = '#28a745';
+                            captureBtn.textContent = '✅ Location Captured';
+                        });
+                },
+                // Error callback
+                (error) => {
+                    let errorMessage = '❌ ';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'Location permission denied. Please enable location access.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information unavailable. Please try again.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'Location request timed out. Please try again.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred while getting location.';
+                    }
+
+                    locationText.textContent = errorMessage;
+                    locationStatus.style.backgroundColor = '#fee';
+                    locationStatus.style.borderColor = '#dc3545';
+                    captureBtn.disabled = false;
+                    captureBtn.textContent = '📍 Capture Current Location';
+                    locationCaptured = false;
+                },
+                // Options
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function checkEditMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            editPropertyId = urlParams.get('edit');
+
+            if (editPropertyId) {
+                editMode = true;
+                document.getElementById('formTitle').textContent = 'Edit Property';
+                document.getElementById('submitBtn').textContent = 'Update Property';
+                loadPropertyData(editPropertyId);
+            }
+        }
+
+        /* Load property for editing */
+        async function loadPropertyData(id) {
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(`/api/property/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const data = await res.json();
+            if (!data.success) return;
+
+            const p = data.property;
+
+            document.getElementById('title').value = p.title;
+            document.getElementById('propertyType').value = p.propertyType;
+            document.getElementById('price').value = p.price;
+            document.getElementById('description').value = p.description;
+
+            let district = p.district;
+            let taluka = p.taluka;
+            let city = p.city;
+
+            if (p.location && (!district || !taluka || !city)) {
+                // Split format: City, Taluka, District, Karnataka
+                const parts = p.location.split(',').map(x => x.trim());
+                city = parts[0];
+                taluka = parts[1];
+                district = parts[2];
+            }
+
+            if (district) {
+                document.getElementById('district').value = district;
+                populateTalukas(district);
+            }
+            if (taluka) {
+                document.getElementById('taluka').value = taluka;
+            }
+            if (city) {
+                document.getElementById('city').value = city;
+            }
+
+            // Load existing coordinates if available
+            if (p.latitude && p.longitude) {
+                document.getElementById('latitude').value = p.latitude;
+                document.getElementById('longitude').value = p.longitude;
+
+                const locationText = document.getElementById('locationText');
+                const locationStatus = document.getElementById('locationStatus');
+                const captureBtn = document.getElementById('captureBtn');
+
+                locationStatus.style.display = 'flex';
+                locationText.textContent = `✅ Existing location loaded`;
+                locationStatus.style.backgroundColor = '#d4edda';
+                locationStatus.style.borderColor = '#28a745';
+                captureBtn.textContent = '🔄 Update Location';
+            }
+        }
+
+        /* Image preview */
+        document.getElementById('images').addEventListener('change', function (e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = "";
+            const files = [...e.target.files];
+
+            if (files.length > 5) {
+                alert("Max 5 images allowed");
+                this.value = "";
+                return;
+            }
+
+            files.forEach(f => {
+                if (f.size > 5 * 1024 * 1024) {
+                    alert("Each image must be less than 5MB");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.className = 'preview-image';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(f);
+            });
+        });
+
+        /* Documents list display (names only) */
+        document.getElementById('documents').addEventListener('change', function (e) {
+            const list = document.getElementById('documentsList');
+            list.innerHTML = "";
+            const files = [...e.target.files];
+
+            if (files.length > 5) {
+                alert("Max 5 documents allowed");
+                this.value = "";
+                return;
+            }
+
+            files.forEach(f => {
+                if (f.size > 10 * 1024 * 1024) {
+                    alert("Each document must be less than 10MB");
+                    return;
+                }
+                const item = document.createElement('p');
+                item.textContent = f.name;
+                list.appendChild(item);
+            });
+        });
+
+        /* SUBMIT FORM */
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            const district = document.getElementById('district').value;
+            const taluka = document.getElementById('taluka').value;
+            const city = document.getElementById('city').value;
+
+            if (!district || !taluka || !city) {
+                alert("Please enter City and select District & Taluka");
+                return;
+            }
+
+            const formData = new FormData(document.getElementById('propertyForm'));
+
+            const finalLocation = `${city}, ${taluka}, ${district}, Karnataka`;
+
+            formData.set('location', finalLocation);
+            formData.set('district', district);
+            formData.set('taluka', taluka);
+            formData.set('city', city);
+
+            const url = editMode ? `/api/property/edit/${editPropertyId}` : `/api/property/add`;
+            const method = editMode ? "PUT" : "POST";
+
+            const token = localStorage.getItem('token');
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                alert("Property saved successfully!");
+                window.location.href = "dashboard.html";
+            } else {
+                alert(data.message || "Error saving property");
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = "login.html";
+        }
+    </script>
+</body>
+
+</html>

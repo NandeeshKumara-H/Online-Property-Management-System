@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Management System - Find Your Dream Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<!-- ★ Add class="home-bg" here -->
+<body class="home-bg">
+    <!-- Navigation Bar -->
+    <nav class="navbar glass-nav">
+        <div class="container">
+            <div class="nav-brand">
+                <h1>🏠 PropertyHub</h1>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <a href="index.html">Home</a>
+                <a href="#properties">Properties</a>
+                <a href="#about">About</a>
+                <div id="authLinks">
+                    <a href="login.html" class="btn-secondary">Login</a>
+                    <a href="signup.html" class="btn-primary">Sign Up</a>
+                </div>
+                <div id="userMenu" style="display: none;">
+                    <span id="userName"></span>
+                    <a href="dashboard.html" class="btn-secondary">Dashboard</a>
+                    <button onclick="logout()" class="btn-danger">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content glass-card">
+                <h1 class="hero-title">Find Your Perfect Property</h1>
+                <p class="hero-subtitle">Discover thousands of properties available for rent and sale</p>
+                
+                <!-- Search Bar -->
+                <div class="search-bar glass-card">
+                    <input type="text" id="searchLocation" placeholder="Enter location..." class="search-input">
+                    <select id="searchType" class="search-select">
+                        <option value="">All Types</option>
+                        <option value="house">House</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="flat">Flat</option>
+                        <option value="plot">Plot</option>
+                        <option value="commercial">Commercial</option>
+                    </select>
+                    <button onclick="searchProperties()" class="btn-primary">Search</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section glass-card">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <h3 id="totalProperties">0</h3>
+                    <p>Properties Listed</p>
+                </div>
+                <div class="stat-card glass-card">
+                    <h3 id="totalOwners">0</h3>
+                    <p>Property Owners</p>
+                </div>
+                <div class="stat-card glass-card">
+                    <h3 id="totalTenants">0</h3>
+                    <p>Happy Tenants</p>
+                </div>
+                <div class="stat-card glass-card">
+                    <h3>100+</h3>
+                    <p>Cities Covered</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Properties Section -->
+    <section class="properties-section" id="properties">
+        <div class="container glass-card">
+            <h2 class="section-title">Featured Properties</h2>
+            <div id="propertiesGrid" class="properties-grid">
+                <!-- Properties will be loaded here -->
+            </div>
+            <div id="noProperties" style="display: none; text-align: center; padding: 40px;">
+                <p>No properties available at the moment.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container glass-card">
+            <h2 class="section-title">About PropertyHub</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Your Trusted Property Partner</h3>
+                    <p>PropertyHub is a comprehensive property management system that connects property owners with potential tenants. We simplify the process of finding, listing, and managing properties.</p>
+                    <ul>
+                        <li>✅ Verified property listings</li>
+                        <li>✅ Direct communication with owners</li>
+                        <li>✅ Secure and transparent platform</li>
+                        <li>✅ Easy property management</li>
+                    </ul>
+                </div>
+                <div class="about-image">
+                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop" alt="Modern house">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer glass-card">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>PropertyHub</h4>
+                    <p>Your trusted property management platform</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <a href="index.html">Home</a>
+                    <a href="#properties">Properties</a>
+                    <a href="#about">About</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="footer-section">
+                    <h4>For Owners</h4>
+                    <a href="signup.html">Register</a>
+                    <a href="add-property.html">List Property</a>
+                    <a href="dashboard.html">Dashboard</a>
+                </div>
+                <div class="footer-section">
+                    <h4>For Tenants</h4>
+                    <a href="signup.html">Register</a>
+                    <a href="index.html#properties">Browse Properties</a>
+                    <a href="dashboard.html">My Account</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PropertyHub. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        // Load properties on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            checkAuth();
+            await loadProperties();
+            await loadStats();
+        });
+
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/property/list');
+                const data = await response.json();
+
+                if (data.success && data.properties.length > 0) {
+                    displayProperties(data.properties);
+                } else {
+                    document.getElementById('propertiesGrid').style.display = 'none';
+                    document.getElementById('noProperties').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading properties:', error);
+            }
+        }
+
+        function displayProperties(properties) {
+            const grid = document.getElementById('propertiesGrid');
+            grid.innerHTML = properties.map(property => `
+                <div class="property-card glass-card" onclick="viewProperty('${property.id}')">
+                    <div class="property-image">
+                        <img src="${property.images && property.images[0] ? property.images[0] : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=300&fit=crop'}" alt="${property.title}">
+                        <span class="property-badge">${property.propertyType}</span>
+                    </div>
+                    <div class="property-details">
+                        <h3>${property.title}</h3>
+                        <p class="property-location">📍 ${property.location}</p>
+                        <p class="property-description">${property.description.substring(0, 100)}...</p>
+                        <div class="property-footer">
+                            <span class="property-price">$${property.price.toLocaleString()}</span>
+                            <button class="btn-secondary">View Details</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewProperty(id) {
+            window.location.href = `property.html?id=${id}`;
+        }
+
+        async function searchProperties() {
+            const location = document.getElementById('searchLocation').value.toLowerCase();
+            const type = document.getElementById('searchType').value.toLowerCase();
+
+            try {
+                const response = await fetch('/api/property/list');
+                const data = await response.json();
+
+                if (data.success) {
+                    let filtered = data.properties;
+
+                    if (location) {
+                        filtered = filtered.filter(p => p.location.toLowerCase().includes(location));
+                    }
+
+                    if (type) {
+                        filtered = filtered.filter(p => p.propertyType.toLowerCase() === type);
+                    }
+
+                    if (filtered.length > 0) {
+                        displayProperties(filtered);
+                        document.getElementById('propertiesGrid').style.display = 'grid';
+                        document.getElementById('noProperties').style.display = 'none';
+                    } else {
+                        document.getElementById('propertiesGrid').style.display = 'none';
+                        document.getElementById('noProperties').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error searching properties:', error);
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/property/list');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalProperties').textContent = data.properties.length;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+            if (token && user) {
+                document.getElementById('authLinks').style.display = 'none';
+                document.getElementById('userMenu').style.display = 'flex';
+                document.getElementById('userName').textContent = user.name;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

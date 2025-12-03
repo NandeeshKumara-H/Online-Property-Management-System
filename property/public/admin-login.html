@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - Property Management System</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-box {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 420px;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1e40af;
+      margin-bottom: 10px;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    input:focus {
+      border-color: #1e40af;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #1e40af;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #1e3a8a;
+    }
+
+    .message {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+
+    .success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 14px;
+      color: #64748b;
+      margin-top: 20px;
+    }
+
+    a {
+      color: #1e40af;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>Admin Login</h1>
+    <p class="subtitle">Access your PropertyHub Admin Panel</p>
+
+    <form id="loginForm" onsubmit="loginAdmin(event)">
+      <div class="form-group">
+        <label for="email">Admin Email</label>
+        <input type="email" id="email" placeholder="admin@example.com" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" id="loginBtn">Login</button>
+    </form>
+
+    <div id="message"></div>
+
+    <p class="note">
+      Need to create admin? <a href="create-admin.html">Create Admin Account</a>
+    </p>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:5000"; // backend port
+
+    async function loginAdmin(e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const msg = document.getElementById("message");
+      const btn = document.getElementById("loginBtn");
+
+      msg.innerHTML = "";
+      btn.disabled = true;
+      btn.textContent = "Logging in...";
+
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          if (data.user.role !== "admin") {
+            msg.innerHTML = `<div class="message error">❌ Access denied. Only admins can login here.</div>`;
+          } else {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            msg.innerHTML = `<div class="message success">✅ Login successful! Redirecting...</div>`;
+            setTimeout(() => (window.location.href = "admin.html"), 1000);
+          }
+        } else {
+          msg.innerHTML = `<div class="message error">❌ ${data.message || "Invalid credentials"}</div>`;
+        }
+      } catch (error) {
+        console.error(error);
+        msg.innerHTML = `<div class="message error">⚠️ Could not connect to backend. Make sure your Node.js server is running on port 5000.</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Login";
+      }
+    }
+  </script>
+</body>
+</html>

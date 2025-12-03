@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Admin Account - Property Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #1e40af;
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #1e40af;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1e3a8a;
+        }
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .note {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #1e40af;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Create Admin Account</h1>
+        <p class="subtitle">One-time setup for Property Management System</p>
+
+        <div class="info">
+            <strong>⚠️ Important:</strong> This page should only be used once to create the initial admin account. After creating the admin, you can delete this file for security.
+        </div>
+
+        <form id="createAdminForm" onsubmit="createAdmin(event)">
+            <div class="form-group">
+                <label for="name">Admin Name</label>
+                <input type="text" id="name" value="Admin User" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Admin Email</label>
+                <input type="email" id="email" value="admin@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Admin Password</label>
+                <input type="password" id="password" value="admin123" required>
+                <p class="note">Default: admin123 (change after first login)</p>
+            </div>
+
+            <button type="submit" id="submitBtn">Create Admin Account</button>
+        </form>
+
+        <div id="message"></div>
+
+        <p class="note">
+            After creating the admin account, login at:
+            <a href="/login.html" class="link">Login Page</a>
+        </p>
+    </div>
+<script>
+    // 🌐 Auto-detect backend (works with Live Server or when served by backend)
+    const API_BASE = window.location.hostname.includes("127.0.0.1") || window.location.hostname.includes("localhost")
+        ? "http://localhost:5000"
+        : "";
+
+    async function createAdmin(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        const submitBtn = document.getElementById('submitBtn');
+        const messageDiv = document.getElementById('message');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+        messageDiv.innerHTML = '';
+
+        try {
+            const response = await fetch(`${API_BASE}/api/admin/create-admin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                messageDiv.innerHTML = `
+                    <div class="message success">
+                        ✅ ${data.message}<br><br>
+                        <strong>Login Credentials:</strong><br>
+                        Email: ${email}<br>
+                        Password: ${password}<br><br>
+                        <a href="/login.html" style="color: #065f46; text-decoration: underline;">Go to Login Page →</a>
+                    </div>
+                `;
+                document.getElementById('createAdminForm').style.display = 'none';
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message error">
+                        ❌ ${data.message}
+                    </div>
+                `;
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Admin Account';
+            }
+        } catch (error) {
+            messageDiv.innerHTML = `
+                <div class="message error">
+                    ❌ Error: Could not connect to backend.<br>
+                    Make sure your Node.js server is running on <code>http://localhost:5000</code>.
+                </div>
+            `;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Admin Account';
+            console.error('Error:', error);
+        }
+    }
+
+    // 🧠 Auto-check if backend is online
+    window.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const check = await fetch(`${API_BASE}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: '', password: '' })
+            });
+            console.log('✅ Backend detected at', API_BASE);
+        } catch (error) {
+            document.getElementById('message').innerHTML = `
+                <div class="message error">
+                    ⚠️ Server not detected at <code>${API_BASE}</code>.<br>
+                    Please start it using: <code>npm start</code>
+                </div>
+            `;
+            console.warn('Backend not running:', error);
+        }
+    });
+</script>
+
+</body>
+</html>
