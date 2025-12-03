@@ -246,6 +246,15 @@ app.post('/api/auth/verify', async (req, res) => {
 // ===================================================================
 
 const PORT = process.env.PORT || 10000;
+app.get("/test-brevo", async (req, res) => {
+  try {
+    const ok = await sendOTPEmail("nadeeshkumar57@gmail.com", "123456", "verification");
+    res.json({ success: ok });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
